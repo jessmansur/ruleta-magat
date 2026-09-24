@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jugá con MaGaT</title>
+  <!-- Confetti JS -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <style>
+    :root {
+      --rosa-principal: #ffb7c5;
+      --rosa-oscuro: #e07a5f;
+      --lila-principal: #e6c6ff;
+      --lila-oscuro: #8367c7;
+      --fondo: #fff5f8;
+      --texto: #4a2e35;
+    }
+
+    * {
+      box-sizing: border-box;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    body {
+      background-color: var(--fondo);
+      color: var(--texto);
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    h1 {
+      color: var(--lila-oscuro);
+      margin-bottom: 20px;
+      font-size: 2.5rem;
+      text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+    }
+
+    .container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      max-width: 600px;
+    }
+
+    /* Formulario */
+    .card {
+      background: white;
+      padding: 20px;
+      border-radius: 20px;
+      box-shadow: 0 8px 20px rgba(131, 103, 199, 0.15);
+      width: 100%;
+      margin-bottom: 20px;
+      border: 2px solid var(--rosa-principal);
+    }
+
+    .form-group {
+      margin-bottom: 15px;
+      text-align: left;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+      color: var(--lila-oscuro);
+    }
+
+    input[type="text"], input[type="email"], input[type="number"] {
+      width: 100%;
+      padding: 10px 15px;
+      border: 2px solid var(--lila-principal);
+      border-radius: 10px;
+      outline: none;
+      font-size: 1rem;
+    }
+
+    input:focus {
+      border-color: var(--lila-oscuro);
+    }
+
+    button {
+      background-color: var(--rosa-principal);
+      color: var(--texto);
+      border: none;
+      padding: 12px 25px;
+      border-radius: 25px;
+      font-size: 1.1rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+
+    button:hover {
+      background-color: var(--lila-principal);
+      transform: translateY(-2px);
+    }
+
+    button:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* Ruleta */
+    .wheel-container {
+      position: relative;
+      margin: 20px 0;
+    }
+
+    #pointer {
+      position: absolute;
+      top: -15px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 0;
+      height: 0;
+      border-left: 15px solid transparent;
+      border-right: 15px solid transparent;
+      border-top: 30px solid var(--lila-oscuro);
+      z-index: 10;
+    }
+
+    canvas {
+      border-radius: 50%;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+      border: 8px solid white;
+    }
+
+    /* Modal / Mensaje */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.5);
+      justify-content: center;
+      align-items: center;
+      z-index: 100;
+    }
+
+    .modal-content {
+      background: white;
+      padding: 30px;
+      border-radius: 25px;
+      text-align: center;
+      max-width: 400px;
+      width: 90%;
+      border: 4px solid var(--rosa-principal);
+      animation: pop 0.3s ease;
+    }
+
+    @keyframes pop {
+      0% { transform: scale(0.7); }
+      100% { transform: scale(1); }
+    }
+
+    .modal h2 {
+      font-size: 1.8rem;
+      margin-bottom: 15px;
+    }
+
+    /* Configuración Acceso */
+    .admin-toggle {
+      margin-top: 30px;
+      font-size: 0.9rem;
+      color: var(--lila-oscuro);
+      cursor: pointer;
+      text-decoration: underline;
+    }
+
+    .admin-panel {
+      display: none;
+      margin-top: 20px;
+      background: #f0e6ff;
+    }
+
+    .radio-group {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 15px;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Jugá con MaGaT</h1>
+
+  <div class="container">
+    <!-- Formulario de Registro -->
+    <div class="card" id="form-card">
+      <div class="form-group">
+        <label for="nombre">Nombre y Apellido</label>
+        <input type="text" id="nombre" placeholder="Ingresá tu nombre completo">
+      </div>
+      <div class="form-group">
+        <label for="correo">Correo Electrónico</label>
+        <input type="email" id="correo" placeholder="ejemplo@correo.com">
+      </div>
+      <button onclick="iniciarGiro()">¡Girar Ruleta!</button>
+    </div>
+
+    <!-- Ruleta -->
+    <div class="wheel-container">
+      <div id="pointer"></div>
+      <canvas id="wheel" width="350" height="350"></canvas>
+    </div>
+
+    <!-- Acceso Administrador -->
+    <span class="admin-toggle" onclick="toggleAdmin()">⚙️ Panel de Configuración</span>
+
+    <!-- Panel de Administración -->
+    <div class="card admin-panel" id="admin-panel">
+      <h3>Configuración de Premios</h3>
+      
+      <div class="form-group">
+        <label>Modo de Limitación de Regalos:</label>
+        <div class="radio-group">
+          <label><input type="radio" name="limitType" value="tiradas" checked onchange="cambiarModoLimites()"> Por Tiradas</label>
+          <label><input type="radio" name="limitType" value="hora" onchange="cambiarModoLimites()"> Por Hora</label>
+        </div>
+      </div>
+
+      <div class="form-group" id="group-max-premios">
+        <label for="maxPremios">Máximo de Regalos a entregar:</label>
+        <input type="number" id="maxPremios" value="1" min="0">
+      </div>
+
+      <div class="form-group" id="group-tiradas">
+        <label for="cadaTiradas">Cada cuántas tiradas totales:</label>
+        <input type="number" id="cadaTiradas" value="10" min="1">
+      </div>
+
+      <button onclick="guardarConfiguracion()">Guardar Configuración</button>
+      <hr style="margin: 20px 0; border: 1px solid var(--lila-principal);">
+      <h3>Datos de Participantes</h3>
+      <button onclick="descargarExcel()">📥 Descargar Lista de Participantes (CSV)</button>
+    </div>
+  </div>
+
+  <!-- Modal Resultado -->
+  <div class="modal" id="result-modal">
+    <div class="modal-content">
+      <h2 id="modal-text"></h2>
+      <button onclick="cerrarModal()">Aceptar</button>
+    </div>
+  </div>
+
+  <script>
+    // Porciones (7 animales + 1 regalo)
+    const items = ["🐶", "🐱", "🐰", "🎁", "🦊", "🐻", "🐼", "🦁"];
+    const colors = ["#ffb7c5", "#e6c6ff", "#fbc4ab", "#d8bbff", "#f8ad9d", "#e2afff", "#ffcad4", "#c8b6ff"];
+
+    const canvas = document.getElementById("wheel");
+    const ctx = canvas.getContext("2d");
+    const numSlices = items.length;
+    const sliceAngle = (2 * Math.PI) / numSlices;
+    let currentAngle = 0;
+    let isSpinning = false;
+
+    // Estado del juego y configuración guardada
+    let config = JSON.parse(localStorage.getItem('magat_config')) || {
+      limitType: 'tiradas',
+      maxPremios: 1,
+      cadaTiradas: 10,
+      premiosEntregadosHora: {},
+      tiradasContador: 0,
+      premiosEnIntervalo: 0
+    };
+
+    let participantes = JSON.parse(localStorage.getItem('magat_participantes')) || [];
+
+    // Dibujar Ruleta
+    function drawWheel() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const radius = canvas.width / 2;
+
+      for (let i = 0; i < numSlices; i++) {
+        const angle = currentAngle + i * sliceAngle;
+        
+        // Sector
+        ctx.beginPath();
+        ctx.fillStyle = colors[i % colors.length];
+        ctx.moveTo(radius, radius);
+        ctx.arc(radius, radius, radius - 5, angle, angle + sliceAngle);
+        ctx.lineTo(radius, radius);
+        ctx.fill();
+        ctx.strokeStyle = "#ffffff";
+        ctx.lineWidth = 3;
+        ctx.stroke();
+
+        // Emojis / Iconos
+        ctx.save();
+        ctx.translate(radius, radius);
+        ctx.rotate(angle + sliceAngle / 2);
+        ctx.textAlign = "right";
+        ctx.font = "32px serif";
+        ctx.fillText(items[i], radius - 20, 10);
+        ctx.restore();
+      }
+    }
+
+    drawWheel();
+
+    // Lógica para determinar si corresponde dar el Regalo
+    function debeGanar() {
+      const ahora = new Date();
+      const horaClave = `${ahora.getFullYear()}-${ahora.getMonth()}-${ahora.getDate()}-${ahora.getHours()}`;
+
+      if (config.limitType === 'hora') {
+        const entregadosEstaHora = config.premiosEntregadosHora[horaClave] || 0;
+        if (entregadosEstaHora < config.maxPremios) {
+          config.premiosEntregadosHora[horaClave] = entregadosEstaHora + 1;
+          localStorage.setItem('magat_config', JSON.stringify(config));
+          return true;
+        }
+        return false;
+      } else {
+        // Por Tiradas
+        config.tiradasContador++;
+        let esGanador = false;
+
+        // Reiniciar ciclo si se superó el bloque de tiradas
+        if (config.tiradasContador > config.cadaTiradas) {
+          config.tiradasContador = 1;
+          config.premiosEnIntervalo = 0;
+        }
+
+        if (config.premiosEnIntervalo < config.maxPremios) {
+          // Determina aleatoriamente si le toca en las tiradas restantes
+          const restantes = config.cadaTiradas - config.tiradasContador + 1;
+          const faltanPremios = config.maxPremios - config.premiosEnIntervalo;
+          
+          if (Math.random() < (faltanPremios / restantes)) {
+            esGanador = true;
+            config.premiosEnIntervalo++;
+          }
+        }
+
+        localStorage.setItem('magat_config', JSON.stringify(config));
+        return esGanador;
+      }
+    }
+
+    function iniciarGiro() {
+      if (isSpinning) return;
+
+      const nombre = document.getElementById("nombre").value.trim();
+      const correo = document.getElementById("correo").value.trim();
+
+      if (!nombre || !correo) {
+        alert("Por favor completá tu Nombre, Apellido y Correo para jugar.");
+        return;
+      }
+
+      // Guardar Participante
+      participantes.push({ nombre, correo, fecha: new Date().toLocaleString() });
+      localStorage.setItem('magat_participantes', JSON.stringify(participantes));
+
+      isSpinning = true;
+
+      // Determinar resultado deseado
+      const gana = debeGanar();
+      const indexRegalo = items.indexOf("🎁");
+      
+      let targetIndex;
+      if (gana) {
+        targetIndex = indexRegalo;
+      } else {
+        // Seleccionar cualquier opción que NO sea el regalo
+        let opcionesPerdedoras = [];
+        for(let i = 0; i < items.length; i++) {
+          if (i !== indexRegalo) opcionesPerdedoras.push(i);
+        }
+        targetIndex = opcionesPerdedoras[Math.floor(Math.random() * opcionesPerdedoras.length)];
+      }
+
+      // Calcular ángulo exacto para detener la ruleta bajo la flecha superior (270 grados / -90 grados)
+      const targetSliceAngle = (2 * Math.PI) - (targetIndex * sliceAngle) - (sliceAngle / 2) - (Math.PI / 2);
+      const extraRounds = 5 * 2 * Math.PI; // 5 giros completos
+      const finalAngle = extraRounds + targetSliceAngle;
+
+      let start = null;
+      const duration = 4000; // 4 segundos
+
+      function animate(timestamp) {
+        if (!start) start = timestamp;
+        const progress = Math.min((timestamp - start) / duration, 1);
+        
+        // Función de desaceleración (easeOut)
+        const easeOut = 1 - Math.pow(1 - progress, 3);
+        currentAngle = easeOut * finalAngle;
+
+        drawWheel();
+
+        if (progress < 1) {
+          requestAnimationFrame(animate);
+        } else {
+          isSpinning = false;
+          mostrarResultado(gana);
+        }
+      }
+
+      requestAnimationFrame(animate);
+    }
+
+    function mostrarResultado(gana) {
+      const modal = document.getElementById("result-modal");
+      const text = document.getElementById("modal-text");
+
+      if (gana) {
+        text.innerHTML = "¡Ganaste un regalin! 👏";
+        confetti({
+          particleCount: 100,
+          spread: 70,
+          origin: { y: 0.6 }
+        });
+      } else {
+        text.innerHTML = "Ouch 😢<br>Pero gracias por jugar con nosotros ❤️";
+      }
+
+      modal.style.display = "flex";
+    }
+
+    function cerrarModal() {
+      document.getElementById("result-modal").style.display = "none";
+      // Limpiar formulario para el siguiente jugador
+      document.getElementById("nombre").value = "";
+      document.getElementById("correo").value = "";
+    }
+
+    // Panel Administrador
+    function toggleAdmin() {
+      const admin = document.getElementById("admin-panel");
+      admin.style.display = admin.style.display === "block" ? "none" : "block";
+    }
+
+    function cambiarModoLimites() {
+      const modo = document.querySelector('input[name="limitType"]:checked').value;
+      const groupTiradas = document.getElementById("group-tiradas");
+      if (modo === 'hora') {
+        groupTiradas.style.display = 'none';
+      } else {
+        groupTiradas.style.display = 'block';
+      }
+    }
+
+    function guardarConfiguracion() {
+      config.limitType = document.querySelector('input[name="limitType"]:checked').value;
+      config.maxPremios = parseInt(document.getElementById("maxPremios").value) || 1;
+      config.cadaTiradas = parseInt(document.getElementById("cadaTiradas").value) || 10;
+      
+      localStorage.setItem('magat_config', JSON.stringify(config));
+      alert("Configuración guardada correctamente.");
+    }
+
+    function descargarExcel() {
+      if (participantes.length === 0) {
+        alert("Aún no hay participantes registrados.");
+        return;
+      }
+
+      let csvContent = "data:text/csv;charset=utf-8,Nombre y Apellido,Correo Electronico,Fecha\n";
+      participantes.forEach(p => {
+        csvContent += `"${p.nombre}","${p.correo}","${p.fecha}"\n`;
+      });
+
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", "participantes_magat.csv");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  </script>
+</body>
+</html>
